@@ -16,7 +16,16 @@ class ProductOutController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(10);
         
-        $products = Product::all();
+        // Get products with their available stock
+        $products = Product::all()->map(function ($product) {
+            $totalIn = ProductIn::where('product_id', $product->id)->sum('quantity');
+            $totalOut = ProductOut::where('product_id', $product->id)->sum('quantity');
+            $product->available_stock = $totalIn - $totalOut;
+            return $product;
+        })->filter(function ($product) {
+            return $product->available_stock > 0; // Only show products with available stock
+        });
+
         return view('stock.out', compact('stockOuts', 'products'));
     }
 
@@ -79,16 +88,16 @@ class ProductOutController extends Controller
     {
         try {
             $stockOut->load('product');
-            $products = Product::all();
             
-            // Calculate available stock for each product
-            foreach ($products as $product) {
+            // Get products with their available stock
+            $products = Product::all()->map(function ($product) use ($stockOut) {
                 $totalIn = ProductIn::where('product_id', $product->id)->sum('quantity');
                 $totalOut = ProductOut::where('product_id', $product->id)
-                    ->where('id', '!=', $stockOut->id)
+                    ->where('id', '!=', $stockOut->id) // Exclude current stock out
                     ->sum('quantity');
                 $product->available_stock = $totalIn - $totalOut;
-            }
+                return $product;
+            });
             
             return view('stock.out-edit', compact('stockOut', 'products'));
         } catch (\Exception $e) {

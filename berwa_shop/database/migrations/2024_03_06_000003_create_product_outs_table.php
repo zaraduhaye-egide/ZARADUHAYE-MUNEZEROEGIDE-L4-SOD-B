@@ -13,7 +13,8 @@ return new class extends Migration
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->integer('quantity');
             $table->decimal('unit_price', 10, 2);
-            $table->string('customer')->nullable();
+            $table->decimal('total_price', 10, 2);
+            $table->string('customer_name')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
         });

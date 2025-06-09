@@ -25,6 +25,39 @@
                         </div>
                     @endif
 
+                    <!-- Current Stock Overview -->
+                    <div class="mb-4">
+                        <h5>Available Stock Overview</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Available Stock</th>
+                                        <th>Unit Price</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($products as $product)
+                                        <tr>
+                                            <td>{{ $product->name }}</td>
+                                            <td>
+                                                @if($product->available_stock > 0)
+                                                    <span class="badge bg-success">{{ $product->available_stock }} units</span>
+                                                @else
+                                                    <span class="badge bg-danger">Out of stock</span>
+                                                @endif
+                                            </td>
+                                            <td>${{ number_format($product->price, 2) }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Stock Out Records -->
+                    <h5>Stock Out Records</h5>
                     <div class="table-responsive">
                         <table class="table table-bordered table-striped">
                             <thead>
@@ -107,15 +140,10 @@
                         <select class="form-select" id="product_id" name="product_id" required>
                             <option value="">Select a product</option>
                             @foreach($products as $product)
-                                @php
-                                    $totalIn = App\Models\ProductIn::where('product_id', $product->id)->sum('quantity');
-                                    $totalOut = App\Models\ProductOut::where('product_id', $product->id)->sum('quantity');
-                                    $available = $totalIn - $totalOut;
-                                @endphp
                                 <option value="{{ $product->id }}" 
-                                        data-available="{{ $available }}"
+                                        data-available="{{ $product->available_stock }}"
                                         data-price="{{ $product->price }}">
-                                    {{ $product->name }} (Available: {{ $available }})
+                                    {{ $product->name }} (Available: {{ $product->available_stock }} units) - ${{ number_format($product->price, 2) }} each
                                 </option>
                             @endforeach
                         </select>
@@ -130,33 +158,55 @@
                         <small class="text-muted">Current available quantity in stock</small>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="quantity" class="form-label">Quantity to Stock Out</label>
-                        <div class="input-group has-validation">
-                            <input type="number" class="form-control" id="quantity" name="quantity" 
-                                   required min="1" value="{{ old('quantity') }}">
-                            <span class="input-group-text">units</span>
-                            <div id="quantityError" class="invalid-feedback"></div>
+                    <div class="form-group mb-4">
+                        <label for="quantity" class="form-label h6 mb-2">Quantity to Stock Out</label>
+                        <div class="input-group input-group-lg">
+                            <input type="text" 
+                                   class="form-control form-control-lg @error('quantity') is-invalid @enderror" 
+                                   id="quantity" 
+                                   name="quantity" 
+                                   value="{{ old('quantity') }}"
+                                   style="font-size: 1.1rem; padding: 12px 15px;"
+                                   placeholder="Enter quantity to stock out">
+                            <span class="input-group-text" style="font-size: 1.1rem;">units</span>
                         </div>
-                        <div id="quantityHelp" class="form-text">Enter the quantity you want to stock out</div>
+                        @error('quantity')
+                            <div class="invalid-feedback d-block">
+                                {{ $message }}
+                            </div>
+                        @enderror
+                        <div id="quantityError" class="text-danger mt-1"></div>
+                        <small id="quantityHelp" class="form-text text-muted">
+                            Enter the number of units you want to stock out
+                        </small>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="unit_price" class="form-label">Unit Price ($)</label>
-                        <div class="input-group">
-                            <span class="input-group-text">$</span>
-                            <input type="number" class="form-control" id="unit_price" name="unit_price" 
-                                   required step="0.01" min="0.01" value="{{ old('unit_price') }}">
+                    <div class="form-group mb-4">
+                        <label for="unit_price" class="form-label h6 mb-2">Unit Price ($)</label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text" style="font-size: 1.1rem;">$</span>
+                            <input type="text" 
+                                   class="form-control form-control-lg bg-light @error('unit_price') is-invalid @enderror" 
+                                   id="unit_price" 
+                                   name="unit_price" 
+                                   style="font-size: 1.1rem; padding: 12px 15px;"
+                                   readonly>
                         </div>
+                        <small class="text-muted">Price per unit (automatically set from product)</small>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="total_price" class="form-label">Total Price ($)</label>
-                        <div class="input-group">
-                            <span class="input-group-text">$</span>
-                            <input type="text" class="form-control bg-light" id="total_price" name="total_price" readonly>
+                    <div class="form-group mb-4">
+                        <label for="total_price" class="form-label h6 mb-2">Total Price ($)</label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text" style="font-size: 1.1rem;">$</span>
+                            <input type="text" 
+                                   class="form-control form-control-lg bg-light" 
+                                   id="total_price" 
+                                   style="font-size: 1.1rem; padding: 12px 15px;"
+                                   readonly>
+                            <span class="input-group-text" style="font-size: 1.1rem;">Total</span>
                         </div>
-                        <small class="text-muted">Automatically calculated: Quantity × Unit Price</small>
+                        <div id="totalHelp" class="form-text text-success mt-1"></div>
                     </div>
 
                     <div class="mb-3">
@@ -169,10 +219,19 @@
                         <label for="notes" class="form-label">Notes</label>
                         <textarea class="form-control" id="notes" name="notes" rows="3">{{ old('notes') }}</textarea>
                     </div>
+
+                    <!-- Live Preview Section -->
+                    <div class="mb-3 border-top pt-3">
+                        <label class="form-label">Transaction Summary</label>
+                        <div class="alert alert-info" id="previewText">
+                            Please select a product and enter quantity to see calculation.
+                        </div>
+                    </div>
+
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary" id="submitBtn">Save</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">Confirm Stock Out</button>
                 </div>
             </form>
         </div>
@@ -186,104 +245,109 @@ document.addEventListener('DOMContentLoaded', function() {
     const quantityInput = document.getElementById('quantity');
     const unitPriceInput = document.getElementById('unit_price');
     const totalPriceInput = document.getElementById('total_price');
-    const availableStockInput = document.getElementById('available_stock');
     const quantityError = document.getElementById('quantityError');
     const quantityHelp = document.getElementById('quantityHelp');
-    const submitBtn = document.getElementById('submitBtn');
-    const stockOutForm = document.getElementById('stockOutForm');
+    const availableStockInput = document.getElementById('available_stock');
 
-    function updateAvailableStock() {
-        const selectedOption = productSelect.options[productSelect.selectedIndex];
+    // Handle quantity input
+    quantityInput.addEventListener('keypress', function(e) {
+        // Allow only numbers (0-9)
+        if (e.key < '0' || e.key > '9') {
+            e.preventDefault();
+        }
+    });
+
+    quantityInput.addEventListener('input', function() {
+        // Remove any non-numeric characters
+        this.value = this.value.replace(/\D/g, '');
+        
+        // Validate quantity
+        const quantity = parseInt(this.value) || 0;
+        const availableStock = parseInt(availableStockInput.value) || 0;
+
+        if (quantity <= 0) {
+            quantityError.textContent = 'Quantity must be greater than 0';
+            quantityError.style.display = 'block';
+        } else if (quantity > availableStock) {
+            quantityError.textContent = `Cannot stock out more than available stock (${availableStock} units)`;
+            quantityError.style.display = 'block';
+        } else {
+            quantityError.textContent = '';
+            quantityError.style.display = 'none';
+        }
+
+        updateTotals();
+    });
+
+    // Format currency
+    function formatCurrency(value) {
+        return parseFloat(value).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+    }
+
+    // Update calculations
+    function updateTotals() {
+        const quantity = parseInt(quantityInput.value) || 0;
+        const unitPrice = parseFloat(unitPriceInput.value) || 0;
+        const total = quantity * unitPrice;
+        
+        // Format and display total
+        totalPriceInput.value = formatCurrency(total);
+        
+        // Show calculation breakdown
+        const totalHelp = document.getElementById('totalHelp');
+        if (quantity > 0 && unitPrice > 0) {
+            totalHelp.innerHTML = `
+                <span class="text-success">
+                    ${quantity} units × $${formatCurrency(unitPrice)} = $${formatCurrency(total)}
+                </span>
+            `;
+        } else {
+            totalHelp.innerHTML = '';
+        }
+    }
+
+    // Handle product selection
+    productSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
         if (selectedOption.value) {
-            const availableStock = parseInt(selectedOption.dataset.available);
+            const availableStock = parseInt(selectedOption.dataset.available) || 0;
             availableStockInput.value = availableStock;
+            unitPriceInput.value = formatCurrency(selectedOption.dataset.price || 0);
             
-            // Set default unit price from product price if not already set
-            if (!unitPriceInput.value) {
-                unitPriceInput.value = selectedOption.dataset.price || '';
-            }
-            
-            // Reset quantity and recalculate total
+            // Reset and focus quantity
             quantityInput.value = '';
-            calculateTotal();
-            validateQuantity();
-
-            // Update help text based on available stock
-            if (availableStock <= 0) {
-                quantityHelp.className = 'form-text text-danger';
-                quantityHelp.textContent = 'No stock available for this product';
-                quantityInput.disabled = true;
-                submitBtn.disabled = true;
-            } else {
-                quantityHelp.className = 'form-text text-muted';
-                quantityHelp.textContent = `Enter quantity (max: ${availableStock} units)`;
-                quantityInput.disabled = false;
-                submitBtn.disabled = false;
-            }
+            quantityInput.focus();
+            
+            // Update help text
+            quantityHelp.textContent = `Available stock: ${availableStock} units`;
         } else {
             availableStockInput.value = '';
             unitPriceInput.value = '';
-            totalPriceInput.value = '';
-            quantityHelp.className = 'form-text text-muted';
+            quantityInput.value = '';
             quantityHelp.textContent = 'Select a product first';
-            quantityInput.disabled = true;
         }
-    }
+        updateTotals();
+    });
 
-    function calculateTotal() {
-        const quantity = parseFloat(quantityInput.value) || 0;
-        const unitPrice = parseFloat(unitPriceInput.value) || 0;
-        const total = quantity * unitPrice;
-        totalPriceInput.value = total.toFixed(2);
-    }
-
-    function validateQuantity() {
+    // Form validation
+    const stockOutForm = document.getElementById('stockOutForm');
+    stockOutForm.addEventListener('submit', function(e) {
         const quantity = parseInt(quantityInput.value) || 0;
         const availableStock = parseInt(availableStockInput.value) || 0;
-        
-        if (availableStock <= 0) {
-            quantityInput.classList.add('is-invalid');
-            quantityError.textContent = 'Error: No stock available for this product';
-            submitBtn.disabled = true;
-            return false;
-        } else if (quantity > availableStock) {
-            quantityInput.classList.add('is-invalid');
-            quantityError.textContent = `Error: Cannot stock out more than available stock (${availableStock} units)`;
-            submitBtn.disabled = true;
-            return false;
-        } else if (quantity <= 0) {
-            quantityInput.classList.add('is-invalid');
-            quantityError.textContent = 'Error: Quantity must be greater than 0';
-            submitBtn.disabled = true;
-            return false;
-        } else {
-            quantityInput.classList.remove('is-invalid');
-            quantityError.textContent = '';
-            submitBtn.disabled = false;
-            return true;
-        }
-    }
 
-    // Event listeners
-    productSelect.addEventListener('change', updateAvailableStock);
-    
-    quantityInput.addEventListener('input', function() {
-        validateQuantity();
-        calculateTotal();
-    });
-    
-    unitPriceInput.addEventListener('input', calculateTotal);
-    
-    stockOutForm.addEventListener('submit', function(e) {
-        if (!validateQuantity()) {
+        if (quantity <= 0) {
             e.preventDefault();
-            return false;
+            quantityError.textContent = 'Quantity must be greater than 0';
+            quantityError.style.display = 'block';
+        } else if (quantity > availableStock) {
+            e.preventDefault();
+            quantityError.textContent = `Cannot stock out more than available stock (${availableStock} units)`;
+            quantityError.style.display = 'block';
         }
-        return true;
     });
 
-    // Initial setup
-    updateAvailableStock();
+    // Initialize
+    updateTotals();
 });
 </script>
 @endpush

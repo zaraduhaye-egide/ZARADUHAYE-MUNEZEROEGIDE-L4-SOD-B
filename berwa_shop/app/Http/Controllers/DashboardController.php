@@ -13,6 +13,9 @@ class DashboardController extends Controller
     {
         $this->middleware('auth');
         $this->middleware(function ($request, $next) {
+            if (!auth()->user() instanceof \App\Models\Shopkeeper) {
+                return redirect()->route('login');
+            }
             $response = $next($request);
             return $response->header('Cache-Control','nocache, no-store, max-age=0, must-revalidate')
                 ->header('Pragma','no-cache')

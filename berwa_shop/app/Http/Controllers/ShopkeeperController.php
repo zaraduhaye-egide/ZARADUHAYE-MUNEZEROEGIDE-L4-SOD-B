@@ -27,7 +27,7 @@ class ShopkeeperController extends Controller
             'password' => ['required'],
         ]);
 
-        if (Auth::attempt($credentials)) {
+        if (Auth::guard('web')->attempt($credentials)) {
             $request->session()->regenerate();
             return redirect()->intended('dashboard')->header('Cache-Control','nocache, no-store, max-age=0, must-revalidate')
                 ->header('Pragma','no-cache')
@@ -36,7 +36,7 @@ class ShopkeeperController extends Controller
 
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
-        ]);
+        ])->withInput($request->except('password'));
     }
 
     public function showRegistrationForm()
@@ -52,13 +52,13 @@ class ShopkeeperController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $shopkeeper = Shopkeeper::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-        ]);
+        $shopkeeper = new Shopkeeper();
+        $shopkeeper->name = $validated['name'];
+        $shopkeeper->email = $validated['email'];
+        $shopkeeper->password = Hash::make($validated['password']);
+        $shopkeeper->save();
 
-        Auth::login($shopkeeper);
+        Auth::guard('web')->login($shopkeeper);
 
         return redirect()->route('dashboard')->header('Cache-Control','nocache, no-store, max-age=0, must-revalidate')
             ->header('Pragma','no-cache')
