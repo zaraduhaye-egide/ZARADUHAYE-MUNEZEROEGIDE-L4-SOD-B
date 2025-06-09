@@ -5,62 +5,26 @@
     <div class="row justify-content-center">
         <div class="col-md-12">
             <div class="card">
-                <div class="card-header">
-                    <h4 class="float-start">Stock Out Management</h4>
-                    <button type="button" class="btn btn-primary float-end" data-bs-toggle="modal" data-bs-target="#addStockOutModal">
-                        Record Stock Out
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Stock Out Management</h4>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStockOutModal">
+                        <i class="fas fa-plus"></i> New Stock Out
                     </button>
                 </div>
 
                 <div class="card-body">
-                    @if (session('success'))
-                        <div class="alert alert-success" role="alert">
-                            {{ session('success') }}
-                        </div>
+                    @if(session('success'))
+                        <div class="alert alert-success">{{ session('success') }}</div>
                     @endif
 
-                    @if (session('error'))
-                        <div class="alert alert-danger" role="alert">
-                            {{ session('error') }}
-                        </div>
+                    @if(session('error'))
+                        <div class="alert alert-danger">{{ session('error') }}</div>
                     @endif
 
-                    <!-- Current Stock Overview -->
-                    <div class="mb-4">
-                        <h5>Available Stock Overview</h5>
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>Product</th>
-                                        <th>Available Stock</th>
-                                        <th>Unit Price</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($products as $product)
-                                        <tr>
-                                            <td>{{ $product->name }}</td>
-                                            <td>
-                                                @if($product->available_stock > 0)
-                                                    <span class="badge bg-success">{{ $product->available_stock }} units</span>
-                                                @else
-                                                    <span class="badge bg-danger">Out of stock</span>
-                                                @endif
-                                            </td>
-                                            <td>${{ number_format($product->price, 2) }}</td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Stock Out Records -->
-                    <h5>Stock Out Records</h5>
+                    <!-- Stock Out Records Table -->
                     <div class="table-responsive">
                         <table class="table table-bordered table-striped">
-                            <thead>
+                            <thead class="table-light">
                                 <tr>
                                     <th>ID</th>
                                     <th>Product</th>
@@ -83,24 +47,26 @@
                                         <td>{{ $stockOut->customer_name }}</td>
                                         <td>{{ $stockOut->created_at->format('Y-m-d H:i') }}</td>
                                         <td>
+                                            <div class="btn-group btn-group-sm">
                                             <a href="{{ route('product-outs.edit', $stockOut->id) }}" 
-                                               class="btn btn-sm btn-primary">
-                                                Edit
+                                                   class="btn btn-primary">
+                                                    <i class="fas fa-edit"></i> Edit
                                             </a>
                                             <form action="{{ route('product-outs.destroy', $stockOut->id) }}" 
                                                   method="POST" class="d-inline">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger" 
+                                                    <button type="submit" class="btn btn-danger" 
                                                         onclick="return confirm('Are you sure you want to delete this record?')">
-                                                    Delete
+                                                        <i class="fas fa-trash"></i> Delete
                                                 </button>
                                             </form>
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="8" class="text-center">No stock-out records found.</td>
+                                        <td colspan="8" class="text-center">No stock out records found</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -114,14 +80,17 @@
     </div>
 </div>
 
-<!-- Add Stock Out Modal -->
-<div class="modal fade" id="addStockOutModal" tabindex="-1" aria-labelledby="addStockOutModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+<!-- Stock Out Form Modal -->
+<div class="modal fade" id="addStockOutModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addStockOutModalLabel">Record Stock Out</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-box"></i> Record Stock Out
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
+            
             <form action="{{ route('product-outs.store') }}" method="POST" id="stockOutForm">
                 @csrf
                 <div class="modal-body">
@@ -135,103 +104,139 @@
                         </div>
                     @endif
 
-                    <div class="mb-3">
-                        <label for="product_id" class="form-label">Product</label>
-                        <select class="form-select" id="product_id" name="product_id" required>
-                            <option value="">Select a product</option>
-                            @foreach($products as $product)
-                                <option value="{{ $product->id }}" 
-                                        data-available="{{ $product->available_stock }}"
-                                        data-price="{{ $product->price }}">
-                                    {{ $product->name }} (Available: {{ $product->available_stock }} units) - ${{ number_format($product->price, 2) }} each
-                                </option>
-                            @endforeach
-                        </select>
+                    <!-- Product Selection Section -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">1. Select Product</h6>
+                        </div>
+                        <div class="card-body">
+                            <select class="form-select form-select-lg @error('product_id') is-invalid @enderror" 
+                                    name="product_id" id="product_id" required>
+                                <option value="">Choose a product...</option>
+                                @foreach($products as $product)
+                                    <option value="{{ $product['id'] }}" 
+                                            data-price="{{ $product['unit_price'] }}"
+                                            data-formatted-price="{{ $product['formatted_unit_price'] }}"
+                                            data-available="{{ $product['available_stock'] }}"
+                                            data-name="{{ $product['name'] }}">
+                                        {{ $product['name'] }} - ${{ $product['formatted_unit_price'] }} 
+                                        ({{ $product['available_stock'] }} in stock)
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('product_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="available_stock" class="form-label">Available Stock</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control bg-light" id="available_stock" readonly>
-                            <span class="input-group-text">units</span>
+                    <!-- Stock Information Section -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">2. Stock Information</h6>
                         </div>
-                        <small class="text-muted">Current available quantity in stock</small>
-                    </div>
-
-                    <div class="form-group mb-4">
-                        <label for="quantity" class="form-label h6 mb-2">Quantity to Stock Out</label>
-                        <div class="input-group input-group-lg">
-                            <input type="text" 
-                                   class="form-control form-control-lg @error('quantity') is-invalid @enderror" 
-                                   id="quantity" 
-                                   name="quantity" 
-                                   value="{{ old('quantity') }}"
-                                   style="font-size: 1.1rem; padding: 12px 15px;"
-                                   placeholder="Enter quantity to stock out">
-                            <span class="input-group-text" style="font-size: 1.1rem;">units</span>
-                        </div>
-                        @error('quantity')
-                            <div class="invalid-feedback d-block">
-                                {{ $message }}
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Available Stock</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control bg-light" 
+                                                   id="available_stock" readonly>
+                                            <span class="input-group-text">units</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Unit Price</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control @error('unit_price') is-invalid @enderror" 
+                                                   id="unit_price" name="unit_price" step="0.01" min="0.01" required>
+                                            <input type="hidden" id="raw_unit_price" name="raw_unit_price">
+                                            @error('unit_price')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                        <small class="form-text text-muted">Original price: $<span id="original_price"></span></small>
+                                    </div>
+                                </div>
                             </div>
-                        @enderror
-                        <div id="quantityError" class="text-danger mt-1"></div>
-                        <small id="quantityHelp" class="form-text text-muted">
-                            Enter the number of units you want to stock out
-                        </small>
-                    </div>
 
-                    <div class="form-group mb-4">
-                        <label for="unit_price" class="form-label h6 mb-2">Unit Price ($)</label>
-                        <div class="input-group input-group-lg">
-                            <span class="input-group-text" style="font-size: 1.1rem;">$</span>
-                            <input type="text" 
-                                   class="form-control form-control-lg bg-light @error('unit_price') is-invalid @enderror" 
-                                   id="unit_price" 
-                                   name="unit_price" 
-                                   style="font-size: 1.1rem; padding: 12px 15px;"
-                                   readonly>
-                        </div>
-                        <small class="text-muted">Price per unit (automatically set from product)</small>
-                    </div>
+                            <div class="mb-3">
+                                <label class="form-label">Quantity to Stock Out</label>
+                                <div class="input-group">
+                                    <input type="number" 
+                                           class="form-control form-control-lg @error('quantity') is-invalid @enderror" 
+                                           id="quantity" name="quantity" min="1" required
+                                           placeholder="Enter quantity">
+                                    <span class="input-group-text">units</span>
+                                </div>
+                                <div id="quantityError" class="invalid-feedback"></div>
+                                @error('quantity')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
 
-                    <div class="form-group mb-4">
-                        <label for="total_price" class="form-label h6 mb-2">Total Price ($)</label>
-                        <div class="input-group input-group-lg">
-                            <span class="input-group-text" style="font-size: 1.1rem;">$</span>
-                            <input type="text" 
-                                   class="form-control form-control-lg bg-light" 
-                                   id="total_price" 
-                                   style="font-size: 1.1rem; padding: 12px 15px;"
-                                   readonly>
-                            <span class="input-group-text" style="font-size: 1.1rem;">Total</span>
-                        </div>
-                        <div id="totalHelp" class="form-text text-success mt-1"></div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="customer_name" class="form-label">Customer Name</label>
-                        <input type="text" class="form-control" id="customer_name" name="customer_name" 
-                               value="{{ old('customer_name') }}">
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="notes" class="form-label">Notes</label>
-                        <textarea class="form-control" id="notes" name="notes" rows="3">{{ old('notes') }}</textarea>
-                    </div>
-
-                    <!-- Live Preview Section -->
-                    <div class="mb-3 border-top pt-3">
-                        <label class="form-label">Transaction Summary</label>
-                        <div class="alert alert-info" id="previewText">
-                            Please select a product and enter quantity to see calculation.
+                            <div class="mb-3">
+                                <label class="form-label">Total Price</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="text" class="form-control bg-light" 
+                                           id="total_price" readonly>
+                                </div>
+                                <div id="priceBreakdown" class="form-text text-success mt-2"></div>
+                            </div>
                         </div>
                     </div>
 
+                    <!-- Customer Information Section -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">3. Customer Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">Customer Name</label>
+                                <input type="text" 
+                                       class="form-control @error('customer_name') is-invalid @enderror" 
+                                       name="customer_name" 
+                                       value="{{ old('customer_name') }}"
+                                       placeholder="Enter customer name">
+                                @error('customer_name')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Notes (Optional)</label>
+                                <textarea class="form-control" 
+                                          name="notes" 
+                                          rows="2"
+                                          placeholder="Add any additional notes">{{ old('notes') }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Transaction Summary -->
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0">Transaction Summary</h6>
+                        </div>
+                        <div class="card-body" id="summaryContent">
+                            <p class="text-muted mb-0">Please select a product and enter quantity to see the transaction summary.</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary" id="submitBtn">Confirm Stock Out</button>
+
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                        <i class="fas fa-save"></i> Record Stock Out
+                    </button>
                 </div>
             </form>
         </div>
@@ -244,111 +249,154 @@ document.addEventListener('DOMContentLoaded', function() {
     const productSelect = document.getElementById('product_id');
     const quantityInput = document.getElementById('quantity');
     const unitPriceInput = document.getElementById('unit_price');
+    const rawUnitPriceInput = document.getElementById('raw_unit_price');
     const totalPriceInput = document.getElementById('total_price');
-    const quantityError = document.getElementById('quantityError');
-    const quantityHelp = document.getElementById('quantityHelp');
     const availableStockInput = document.getElementById('available_stock');
+    const priceBreakdown = document.getElementById('priceBreakdown');
+    const summaryContent = document.getElementById('summaryContent');
+    const submitBtn = document.getElementById('submitBtn');
+    const originalPriceSpan = document.getElementById('original_price');
 
-    // Handle quantity input
-    quantityInput.addEventListener('keypress', function(e) {
-        // Allow only numbers (0-9)
-        if (e.key < '0' || e.key > '9') {
-            e.preventDefault();
-        }
-    });
-
-    quantityInput.addEventListener('input', function() {
-        // Remove any non-numeric characters
-        this.value = this.value.replace(/\D/g, '');
-        
-        // Validate quantity
-        const quantity = parseInt(this.value) || 0;
-        const availableStock = parseInt(availableStockInput.value) || 0;
-
-        if (quantity <= 0) {
-            quantityError.textContent = 'Quantity must be greater than 0';
-            quantityError.style.display = 'block';
-        } else if (quantity > availableStock) {
-            quantityError.textContent = `Cannot stock out more than available stock (${availableStock} units)`;
-            quantityError.style.display = 'block';
-        } else {
-            quantityError.textContent = '';
-            quantityError.style.display = 'none';
-        }
-
-        updateTotals();
-    });
-
-    // Format currency
     function formatCurrency(value) {
         return parseFloat(value).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
     }
 
-    // Update calculations
-    function updateTotals() {
-        const quantity = parseInt(quantityInput.value) || 0;
-        const unitPrice = parseFloat(unitPriceInput.value) || 0;
-        const total = quantity * unitPrice;
+    function updateProductInfo() {
+        const selectedOption = productSelect.options[productSelect.selectedIndex];
         
-        // Format and display total
-        totalPriceInput.value = formatCurrency(total);
-        
-        // Show calculation breakdown
-        const totalHelp = document.getElementById('totalHelp');
-        if (quantity > 0 && unitPrice > 0) {
-            totalHelp.innerHTML = `
-                <span class="text-success">
-                    ${quantity} units × $${formatCurrency(unitPrice)} = $${formatCurrency(total)}
-                </span>
-            `;
+        if (selectedOption && selectedOption.value) {
+            // Get data from the selected option
+            const availableStock = parseInt(selectedOption.dataset.available);
+            const unitPrice = parseFloat(selectedOption.dataset.price);
+            const formattedPrice = selectedOption.dataset.formattedPrice;
+            const productName = selectedOption.dataset.name;
+            
+            // Update displays
+            availableStockInput.value = availableStock;
+            unitPriceInput.value = unitPrice.toFixed(2); // Set as editable value
+            rawUnitPriceInput.value = unitPrice;
+            originalPriceSpan.textContent = formattedPrice; // Show original price
+            
+            // Enable inputs
+            quantityInput.disabled = false;
+            unitPriceInput.disabled = false;
+            quantityInput.value = ''; // Reset quantity when product changes
+            
+            // Reset calculations
+            totalPriceInput.value = '';
+            priceBreakdown.innerHTML = '';
+            summaryContent.innerHTML = '<p class="text-muted mb-0">Please enter quantity to see the transaction summary.</p>';
+            
+            // Update submit button state
+            submitBtn.disabled = true;
         } else {
-            totalHelp.innerHTML = '';
+            // Reset fields if no product is selected
+            availableStockInput.value = '';
+            unitPriceInput.value = '';
+            rawUnitPriceInput.value = '';
+            totalPriceInput.value = '';
+            quantityInput.value = '';
+            originalPriceSpan.textContent = '';
+            quantityInput.disabled = true;
+            unitPriceInput.disabled = true;
+            submitBtn.disabled = true;
+            priceBreakdown.innerHTML = '';
+            summaryContent.innerHTML = '<p class="text-muted mb-0">Please select a product and enter quantity to see the transaction summary.</p>';
         }
     }
 
-    // Handle product selection
-    productSelect.addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
-        if (selectedOption.value) {
-            const availableStock = parseInt(selectedOption.dataset.available) || 0;
-            availableStockInput.value = availableStock;
-            unitPriceInput.value = formatCurrency(selectedOption.dataset.price || 0);
-            
-            // Reset and focus quantity
-            quantityInput.value = '';
-            quantityInput.focus();
-            
-            // Update help text
-            quantityHelp.textContent = `Available stock: ${availableStock} units`;
-        } else {
-            availableStockInput.value = '';
-            unitPriceInput.value = '';
-            quantityInput.value = '';
-            quantityHelp.textContent = 'Select a product first';
-        }
-        updateTotals();
-    });
+    function updateCalculations() {
+        const selectedOption = productSelect.options[productSelect.selectedIndex];
+        if (!selectedOption || !selectedOption.value) return;
 
-    // Form validation
-    const stockOutForm = document.getElementById('stockOutForm');
-    stockOutForm.addEventListener('submit', function(e) {
         const quantity = parseInt(quantityInput.value) || 0;
-        const availableStock = parseInt(availableStockInput.value) || 0;
-
-        if (quantity <= 0) {
-            e.preventDefault();
-            quantityError.textContent = 'Quantity must be greater than 0';
-            quantityError.style.display = 'block';
-        } else if (quantity > availableStock) {
-            e.preventDefault();
-            quantityError.textContent = `Cannot stock out more than available stock (${availableStock} units)`;
-            quantityError.style.display = 'block';
+        const unitPrice = parseFloat(unitPriceInput.value) || 0;
+        const availableStock = parseInt(selectedOption.dataset.available);
+        const productName = selectedOption.dataset.name;
+        const originalPrice = parseFloat(selectedOption.dataset.price);
+        
+        // Calculate total
+        const totalPrice = quantity * unitPrice;
+        
+        // Update displays
+        totalPriceInput.value = formatCurrency(totalPrice);
+        
+        // Update price breakdown
+        if (quantity > 0) {
+            let priceInfo = `${quantity} units × $${formatCurrency(unitPrice)} per unit`;
+            if (unitPrice !== originalPrice) {
+                priceInfo += ` (Original: $${formatCurrency(originalPrice)})`;
+            }
+            priceBreakdown.innerHTML = priceInfo;
+            
+            // Update summary
+            summaryContent.innerHTML = `
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <tr>
+                            <th>Product:</th>
+                            <td>${productName}</td>
+                        </tr>
+                        <tr>
+                            <th>Quantity:</th>
+                            <td>${quantity} units</td>
+                        </tr>
+                        <tr>
+                            <th>Unit Price:</th>
+                            <td>$${formatCurrency(unitPrice)}</td>
+                        </tr>
+                        <tr class="table-info">
+                            <th>Total Amount:</th>
+                            <td>$${formatCurrency(totalPrice)}</td>
+                        </tr>
+                    </table>
+                </div>`;
+        } else {
+            priceBreakdown.innerHTML = '';
+            summaryContent.innerHTML = '<p class="text-muted mb-0">Please enter a valid quantity to see the transaction summary.</p>';
         }
-    });
+        
+        // Validate quantity and update submit button
+        if (quantity > availableStock) {
+            quantityInput.classList.add('is-invalid');
+            document.getElementById('quantityError').textContent = `Cannot exceed available stock (${availableStock} units)`;
+            submitBtn.disabled = true;
+        } else if (quantity <= 0) {
+            quantityInput.classList.add('is-invalid');
+            document.getElementById('quantityError').textContent = 'Quantity must be greater than 0';
+            submitBtn.disabled = true;
+        } else {
+            quantityInput.classList.remove('is-invalid');
+            document.getElementById('quantityError').textContent = '';
+            submitBtn.disabled = false;
+        }
+    }
 
-    // Initialize
-    updateTotals();
+    // Event Listeners
+    productSelect.addEventListener('change', updateProductInfo);
+    quantityInput.addEventListener('input', updateCalculations);
+    unitPriceInput.addEventListener('input', updateCalculations);
 });
 </script>
+@endpush
+
+@push('styles')
+<style>
+.modal-lg {
+    max-width: 800px;
+}
+.card-header {
+    padding: 0.75rem 1.25rem;
+}
+.form-label {
+    font-weight: 500;
+}
+.input-group-text {
+    background-color: #f8f9fa;
+}
+.table-sm th {
+    background-color: #f8f9fa;
+}
+</style>
 @endpush
 @endsection 

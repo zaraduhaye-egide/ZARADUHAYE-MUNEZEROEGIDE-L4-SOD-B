@@ -17,6 +17,8 @@ class Product extends Model
         'category'
     ];
 
+    protected $appends = ['available_stock', 'formatted_price'];
+
     /**
      * Get all stock ins for the product
      */
@@ -41,5 +43,19 @@ class Product extends Model
         $stockIn = $this->productIns()->sum('quantity') ?? 0;
         $stockOut = $this->productOuts()->sum('quantity') ?? 0;
         return $stockIn - $stockOut;
+    }
+
+    // Get available stock for the product
+    public function getAvailableStockAttribute()
+    {
+        $totalIn = $this->productIns()->sum('quantity');
+        $totalOut = $this->productOuts()->sum('quantity');
+        return $totalIn - $totalOut;
+    }
+
+    // Format price for display
+    public function getFormattedPriceAttribute()
+    {
+        return number_format($this->unit_price, 2);
     }
 } 
